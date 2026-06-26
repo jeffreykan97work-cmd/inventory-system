@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>紀念品倉存系統 v3</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:#f0f4f8;color:#1a2a3a}
+.hdr{background:linear-gradient(135deg,#1a3d5c,#2c5a8a);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:18px}.hdr span{font-size:12px;opacity:.7;cursor:pointer}
+.ctn{max-width:900px;margin:0 auto;padding:16px}
+.tabs{display:flex;margin-bottom:16px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.tab{flex:1;padding:12px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:#6a7a8a;border:none;background:none}
+.tab.on{color:#fff;background:#2c5a8a}
+.card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.05);margin-bottom:14px}
+h2{font-size:15px;margin-bottom:12px;color:#1a3d5c}
+.fld{margin-bottom:12px}.fld label{display:block;font-size:11px;color:#6a7a8a;margin-bottom:4px;font-weight:600}
+.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid #d0d8e0;border-radius:8px;font-size:14px}
+.ir{display:flex;gap:8px;align-items:center;padding:8px 10px;background:#f7f9fc;border-radius:8px;margin-bottom:6px}
+.ir select{flex:1;min-width:0;padding:8px;border:1px solid #d0d8e0;border-radius:6px;font-size:13px}
+.ir input{width:65px;padding:8px;border:1px solid #d0d8e0;border-radius:6px;font-size:13px;text-align:center}
+.ir .stk{font-size:10px;color:#888;min-width:55px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-p{background:#2c5a8a;color:#fff;width:100%}.btn-p:hover{background:#1a3d5c}
+.btn-o{background:#fff;color:#2c5a8a;border:2px solid #2c5a8a}.btn-x{background:none;color:#c44;font-size:11px;padding:2px 6px}
+.btn-s{padding:6px 14px;font-size:12px}.btn-g{background:#2a8a4a;color:#fff}.btn-r{background:#c44;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 6px;font-size:10px;color:#6a7a8a;font-weight:700;border-bottom:2px solid #e0e8f0}
+td{padding:8px 6px;border-bottom:1px solid #e8ecf2}
+.low{color:#c44;font-weight:700}.ok{color:#2a8a4a}
+.badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.bp{background:#fff3cd;color:#856404}.bg{background:#d4edda;color:#155724}.br{background:#f8d7da;color:#721c24}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.ci{background:#f7f9fc;border-radius:10px;padding:12px;text-align:center;border:1px solid #e0e8f0}
+.ci img{width:100%;height:160px;object-fit:contain;border-radius:8px;background:#fff;margin-bottom:8px}
+.ci .ni{width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:#e8ecf2;border-radius:8px;color:#aaa;font-size:12px}
+.ci .cn{font-size:13px;font-weight:600;color:#1a3d5c}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:99;align-items:center;justify-content:center}
+.modal.show{display:flex}.mb{background:#fff;padding:24px;border-radius:12px;width:320px;text-align:center}
+.mb input{width:100%;padding:10px;border:1px solid #d0d8e0;border-radius:8px;margin:10px 0;font-size:14px}
+</style>
+</head>
+<body>
+<div class="hdr"><h1>📦 紀念品申請系統</h1><span onclick="showLogin()">🔒 主管登入</span></div>
+<div class="ctn">
+<div class="tabs" id="tabs">
+  <button class="tab on" onclick="tab('apply')">📝 申請</button>
+  <button class="tab" onclick="tab('cat')">📷 目錄</button>
+</div>
+
+<div id="p-apply" class="card">
+  <h2>物品申請表（需主管審批）</h2>
+  <div class="fld"><label>申請人 *</label><input id="a" placeholder="姓名"/></div>
+  <div class="fld"><label>部門 *</label><input id="d" placeholder="部門"/></div>
+  <div class="fld"><label>分類 *</label><select id="c"><option value="">選擇</option><option>參觀</option><option>親子遊</option><option>致送嘉賓、單位</option><option>交流會、會議</option><option>人員退休、紀念</option><option>其他宣傳活動</option><option>滿意度調查</option><option>宣傳品存入</option><option>其他</option></select></div>
+  <div class="fld"><label>事由 *</label><input id="r" placeholder="簡述原因"/></div>
+  <div style="font-size:12px;color:#6a7a8a;margin:12px 0 6px;font-weight:600">申請物品</div>
+  <div id="items"></div>
+  <button class="btn btn-o btn-s" onclick="addRow()">+ 新增物品</button>
+  <div style="margin-top:16px"><button class="btn btn-p" onclick="submit()">📤 提交申請</button></div>
+  <div id="result" style="margin-top:10px;text-align:center;font-size:14px"></div>
+</div>
+
+<div id="p-cat" class="card" style="display:none"><h2>紀念品目錄</h2><div id="cg" class="cg"><div style="text-align:center;color:#aaa;padding:20px">載入中…</div></div></div>
+
+<div id="p-stock" class="card" style="display:none"><h2>📊 庫存總覽</h2><table><thead><tr><th>物品</th><th>庫存</th><th>安全</th><th>狀態</th><th>操作</th></tr></thead><tbody id="stock-tbl"></tbody></table></div>
+<div id="p-ap" class="card" style="display:none"><h2>📋 審批列表</h2><table><thead><tr><th>編號</th><th>申請人</th><th>部門</th><th>物品</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ap-tbl"></tbody></table></div>
+</div>
+
+<div id="login-modal" class="modal"><div class="mb"><h3>🔒 主管登入</h3><input id="pwd" type="password" placeholder="密碼"/><br><button class="btn btn-p" onclick="doLogin()">登入</button></div></div>
+
+<script>
+let cat=[], sup=false, token='';
+fetch('/api/catalog').then(r=>r.json()).then(d=>{cat=d;renderItems();renderCat();});
+
+function renderItems(){
+  let o=cat.map((it,i)=>`<option value="${i}">${it.name}</option>`).join('');
+  document.getElementById('items').innerHTML=`<div class="ir"><select><option value="">選擇…</option>${o}</select><input type="number" value="1" min="1"><button class="btn btn-x" onclick="this.parentElement.remove()">✕</button></div>`;
+}
+function addRow(){
+  let o=cat.map((it,i)=>`<option value="${i}">${it.name}</option>`).join('');
+  let d=document.createElement('div');d.className='ir';
+  d.innerHTML=`<select><option value="">選擇…</option>${o}</select><input type="number" value="1" min="1"><button class="btn btn-x" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('items').appendChild(d);
+}
+function renderCat(){
+  document.getElementById('cg').innerHTML=cat.map(it=>it.image?`<div class="ci"><img src="${it.image}" onerror="this.style.display='none';this.parentElement.querySelector('.ni').style.display='flex'"/><div class="ni" style="display:none">📷</div><div class="cn">${it.name}</div></div>`:`<div class="ci"><div class="ni">📷 暫無圖片</div><div class="cn">${it.name}</div></div>`).join('');
+}
+async function submit(){
+  let a=document.getElementById('a').value.trim(),d=document.getElementById('d').value.trim();
+  let c=document.getElementById('c').value,r=document.getElementById('r').value.trim();
+  if(!a||!d||!c||!r)return alert('請填寫所有必填欄位');
+  let its=[];document.querySelectorAll('#items .ir').forEach(row=>{let s=row.querySelector('select'),q=row.querySelector('input');if(s.value!=='')its.push({name:cat[s.value].name,qty:parseInt(q.value)||1});});
+  if(!its.length)return alert('請至少選擇一個物品');
+  document.getElementById('result').innerHTML='⏳ 提交中…';
+  let res=await fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({applicant:a,department:d,category:c,reason:r,items:its})});
+  let j=await res.json();
+  document.getElementById('result').innerHTML='✅ '+j.message;
+  setTimeout(()=>location.reload(),2000);
+}
+function tab(t){
+  document.querySelectorAll('#tabs .tab').forEach(b=>b.classList.remove('on'));
+  event.target.classList.add('on');
+  document.getElementById('p-apply').style.display=t==='apply'?'':'none';
+  document.getElementById('p-cat').style.display=t==='cat'?'':'none';
+  if(sup){document.getElementById('p-stock').style.display=t==='stock'?'':'none';document.getElementById('p-ap').style.display=t==='ap'?'':'none';}
+}
+// Supervisor
+function showLogin(){document.getElementById('login-modal').classList.add('show');}
+async function doLogin(){
+  let p=document.getElementById('pwd').value;
+  let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});
+  let j=await r.json();
+  if(j.status==='ok'){sup=true;token=p;document.getElementById('login-modal').classList.remove('show');
+    document.getElementById('tabs').innerHTML='<button class="tab on" onclick="tab(\'apply\')">📝 申請</button><button class="tab" onclick="tab(\'cat\')">📷 目錄</button><button class="tab" onclick="tab(\'stock\')">📊 庫存</button><button class="tab" onclick="tab(\'ap\')">📋 審批</button>';
+    loadStock();loadAp();}
+  else alert('密碼錯誤');
+}
+async function loadStock(){
+  let r=await fetch('/api/stock?password='+token);let items=await r.json();
+  document.getElementById('stock-tbl').innerHTML=items.map((it,i)=>`<tr><td><strong>${it.name}</strong></td><td>${it.stock}</td><td>${it.safe}</td><td class="${it.stock<=it.safe?'low':'ok'}">${it.stock<=it.safe?'⚠️':'✅'}</td><td><input id="sk-${i}" value="${it.stock}" style="width:60px;padding:4px"/> <button class="btn btn-s btn-p" onclick="saveStk('${it.name}',${i})">更新</button></td></tr>`).join('');
+}
+async function saveStk(name,i){let v=document.getElementById('sk-'+i).value;await fetch('/api/stock/update?password='+token,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,stock:parseInt(v)})});loadStock();}
+async function loadAp(){
+  let r=await fetch('/api/approvals?password='+token);let apps=await r.json();
+  document.getElementById('ap-tbl').innerHTML=apps.map(a=>{
+    let b=a.status==='待審批'?'bp':a.status==='已通過'?'bg':'br';
+    let its=a.items.map(i=>i.name+'×'+i.qty).join(', ');
+    let btns=a.status==='待審批'?`<button class="btn btn-g btn-s" onclick="act('${a.app_id}','approve')">✓</button> <button class="btn btn-r btn-s" onclick="act('${a.app_id}','reject')">✕</button>`:'';
+    return `<tr><td>${a.app_id}</td><td>${a.applicant}</td><td>${a.department}</td><td>${its}</td><td><span class="badge ${b}">${a.status}</span></td><td>${btns}</td></tr>`;
+  }).join('');
+}
+async function act(id,action){
+  let approver=prompt('審批人姓名:');if(!approver)return;
+  await fetch('/api/approve?password='+token,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:id,action,approver})});
+  loadAp();loadStock();
+}
+</script>
+</body>
+</html>
