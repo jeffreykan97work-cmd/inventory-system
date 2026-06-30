@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生成申請表 — DMA 庫存系統</title>
+<style>
+:root{--bg:#f7f5f0;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--accent:#635bff;--danger:#ef4444;--success:#10b981;--radius:12px;--shadow:0 2px 12px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.container{max-width:800px;margin:0 auto;padding:16px}
+header{text-align:center;padding:16px 0}
+header h1{font-size:22px;font-weight:800;background:linear-gradient(135deg,#635bff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{color:var(--muted);font-size:13px;margin-top:4px}
+
+.nav{display:flex;gap:8px;margin-bottom:16px;justify-content:center}
+.nav a{color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:16px;background:#ede9fe}
+.nav a:hover{background:#ddd6fe}
+
+.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.card h2{font-size:15px;margin-bottom:10px;color:#4f46e5}
+.card h3{font-size:13px;color:var(--muted);margin-bottom:8px}
+
+.form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.form-row label{font-size:13px;font-weight:600;min-width:60px;line-height:36px}
+.form-row input,.form-row select{padding:8px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;flex:1;min-width:120px;font-family:inherit}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--accent)}
+
+.type-toggle{display:flex;gap:8px;margin-bottom:10px}
+.type-btn{padding:8px 20px;border:2px solid #e5e7eb;border-radius:20px;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.2s}
+.type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.type-btn.deposit.active{background:var(--success);border-color:var(--success)}
+
+.cat-section{margin-bottom:8px}
+.cat-toggle{width:100%;text-align:left;padding:10px 14px;background:#f8f7ff;border:1px solid #e5e7eb;border-radius:var(--radius);cursor:pointer;font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;font-family:inherit}
+.cat-toggle:hover{background:#ede9fe}
+.cat-toggle .count{font-size:12px;color:var(--muted);font-weight:400}
+
+.item-list{display:none;padding:4px 0}
+.item-list.open{display:block}
+
+.item-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #f3f4f6;gap:10px}
+.item-row:last-child{border-bottom:none}
+.item-row:hover{background:#faf9ff}
+.item-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.item-row .name{flex:1;font-size:13px}
+.item-row .stock{font-size:12px;color:var(--muted);min-width:70px;text-align:right}
+.item-row .stock.low{color:var(--danger);font-weight:700}
+
+.selected-bar{position:sticky;bottom:16px;background:var(--card);border-radius:var(--radius);padding:14px 16px;box-shadow:0 -2px 20px rgba(0,0,0,.1);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.selected-bar .count{font-size:14px;font-weight:700;white-space:nowrap}
+.selected-bar .count span{color:var(--accent);font-size:20px}
+
+.btn{padding:10px 24px;border:none;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4f46e5}
+.btn-outline{background:none;border:2px solid var(--accent);color:var(--accent);padding:8px 20px}
+.btn-outline:hover{background:#ede9fe}
+
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:100;opacity:0;transition:.3s}
+.toast.show{opacity:1}
+.toast.error{background:var(--danger)}
+
+@media(max-width:500px){
+  .form-row{flex-direction:column;gap:6px}
+  .form-row label{min-width:auto}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>📄 紀念品申請表生成</h1>
+  <p>揀物品 → 填資料 → 印出嚟俾同事填數量 + 簽名</p>
+</header>
+
+<div class="nav">
+  <a href="/">← 庫存管理</a>
+  <a href="/catalog">🖼 紀念品目錄</a>
+</div>
+
+<!-- Form Info -->
+<div class="card">
+  <div class="type-toggle" id="typeToggle">
+    <button class="type-btn active" onclick="setType('withdraw', this)">📤 申領（提取）</button>
+    <button class="type-btn deposit" onclick="setType('deposit', this)">📥 存入（歸還）</button>
+  </div>
+  <div class="form-row">
+    <label>部門</label><input id="dept" placeholder="例：一般宣傳品">
+    <label>申請人</label><input id="applicant" placeholder="姓名">
+  </div>
+  <div class="form-row">
+    <label>事由</label><input id="reason" placeholder="例：親子遊活動派發" style="flex:3">
+  </div>
+</div>
+
+<!-- Product Selection -->
+<div class="card">
+  <h2>選擇物品（㩒分類展開）</h2>
+  <div id="productList">載入中...</div>
+</div>
+
+<!-- Sticky Bottom Bar -->
+<div class="selected-bar" id="stickyBar" style="display:none">
+  <div class="count">已選 <span id="selCount">0</span> 項</div>
+  <div style="flex:1"></div>
+  <button class="btn btn-outline" onclick="clearAll()">清除</button>
+  <button class="btn btn-primary" onclick="generatePDF()">🖨 生成 PDF</button>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let appType = 'withdraw';
+let allProducts = [];
+let selected = new Set();
+
+async function init() {
+  const [cats, prods] = await Promise.all([
+    fetch('/api/categories').then(r=>r.json()),
+    fetch('/api/catalog').then(r=>r.json())
+  ]);
+  allProducts = prods;
+  
+  // Group by category
+  const grouped = {};
+  for (const c of cats) grouped[c.id] = {name: c.name, items: []};
+  for (const p of prods) {
+    if (grouped[p.category_id]) {
+      grouped[p.category_id].items.push(p);
+    }
+  }
+  
+  let html = '';
+  for (const [cid, g] of Object.entries(grouped)) {
+    if (g.items.length === 0) continue;
+    const totalQty = g.items.reduce((s,p)=>s+p.quantity, 0);
+    html += `<div class="cat-section">
+      <button class="cat-toggle" onclick="toggleCat(this)">
+        ${esc(g.name)}
+        <span class="count">${g.items.length} 項 · 共 ${totalQty} 件</span>
+      </button>
+      <div class="item-list">`;
+    
+    for (const p of g.items) {
+      const lowClass = p.quantity <= p.min_stock && p.min_stock > 0 ? ' low' : '';
+      html += `<label class="item-row">
+        <input type="checkbox" value="${p.id}" onchange="toggleItem(${p.id}, this.checked)">
+        <span class="name">${esc(p.name)}</span>
+        <span class="stock${lowClass}">存貨: ${p.quantity}</span>
+      </label>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('productList').innerHTML = html;
+  updateBar();
+}
+
+function toggleCat(btn) {
+  const list = btn.nextElementSibling;
+  list.classList.toggle('open');
+}
+
+function toggleItem(id, checked) {
+  if (checked) selected.add(id); else selected.delete(id);
+  updateBar();
+}
+
+function updateBar() {
+  const bar = document.getElementById('stickyBar');
+  const cnt = selected.size;
+  document.getElementById('selCount').textContent = cnt;
+  bar.style.display = cnt > 0 ? 'flex' : 'none';
+}
+
+function clearAll() {
+  selected.clear();
+  document.querySelectorAll('.item-row input').forEach(cb => cb.checked = false);
+  updateBar();
+}
+
+function setType(type, btn) {
+  appType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function generatePDF() {
+  if (selected.size === 0) {
+    toast('請至少選擇一件物品', true);
+    return;
+  }
+  
+  const ids = Array.from(selected).join(',');
+  const dept = encodeURIComponent(document.getElementById('dept').value);
+  const applicant = encodeURIComponent(document.getElementById('applicant').value);
+  const reason = encodeURIComponent(document.getElementById('reason').value);
+  
+  const url = `/api/applications/generate-pdf?product_ids=${ids}&app_type=${appType}&department=${dept}&applicant=${applicant}&reason=${reason}`;
+  
+  toast('正在生成 PDF...');
+  
+  // Download the PDF
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'DMA_紀念品申請表.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  setTimeout(() => toast('✅ PDF 已下載！'), 500);
+}
+
+init();
+</script>
+</body>
+</html>

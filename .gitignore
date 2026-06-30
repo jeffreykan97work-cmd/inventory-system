@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Uploads (user-generated)
+uploads/
+temp_images/
+
+# Test outputs
+test_*.pdf
+test_*.png
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+.server.pid
+
+# Render disk mount (DB will be at /data)
+# inventory.db is EXCLUDED — Render uses persistent disk
+# Fonts downloaded during Render build step
+fonts/
+
+# Upload helper scripts (one-time use)
+upload_*.py

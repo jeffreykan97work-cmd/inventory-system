@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMA 紀念品目錄</title>
+<style>
+:root{--bg:#f7f5f0;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--accent:#635bff;--radius:12px;--shadow:0 2px 12px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.container{max-width:1000px;margin:0 auto;padding:16px}
+header{text-align:center;padding:20px 0}
+header h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#635bff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.category-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+.cat-btn{padding:8px 16px;border:2px solid #e5e7eb;border-radius:20px;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.2s}
+.cat-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cat-btn:hover:not(.active){background:#f3f4f6}
+
+.count-bar{text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:var(--card);transition:.2s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.card-img{width:100%;height:180px;object-fit:cover;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:48px}
+.card-img img{width:100%;height:100%;object-fit:cover}
+.card-body{padding:14px;flex:1;display:flex;flex-direction:column}
+.card-body .name{font-size:14px;font-weight:700;margin-bottom:4px;line-height:1.3}
+.card-body .cat{font-size:11px;color:var(--muted);margin-bottom:8px}
+.card-body .stock{font-size:26px;font-weight:800;color:var(--accent)}
+.card-body .stock.low{color:#ef4444}
+.card-body .stock-label{font-size:11px;color:var(--muted)}
+.card-body .meta{font-size:11px;color:var(--muted);margin-top:auto;padding-top:8px;border-top:1px solid #f3f4f6}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .card-img{height:140px}
+  .card-body .stock{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>🖼 DMA 紀念品目錄</h1>
+  <p>現有庫存一覽 · 點擊分類篩選</p>
+</header>
+
+<div class="category-bar" id="catBar">
+  <button class="cat-btn active" onclick="filterCat(0)">全部</button>
+</div>
+<div class="count-bar" id="countBar">載入中...</div>
+<div class="grid" id="grid"></div>
+</div>
+
+<script>
+let allProducts=[], allCats=[];
+
+async function init(){
+  const [cats,prods]=await Promise.all([
+    fetch('/api/categories').then(r=>r.json()),
+    fetch('/api/catalog').then(r=>r.json())
+  ]);
+  allCats=cats; allProducts=prods;
+  
+  document.getElementById('catBar').innerHTML=
+    '<button class="cat-btn active" onclick="filterCat(0)">全部</button>'+
+    cats.map(c=>`<button class="cat-btn" onclick="filterCat(${c.id})">${esc(c.name)}</button>`).join('');
+  render(prods);
+}
+
+function filterCat(cid){
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  const filtered=cid===0?allProducts:allProducts.filter(p=>p.category_id===cid);
+  render(filtered);
+}
+
+function render(products){
+  document.getElementById('countBar').textContent=`共 ${products.length} 件產品 · 總庫存 ${products.reduce((s,p)=>s+p.quantity,0)} 件`;
+  
+  const grid=document.getElementById('grid');
+  if(!products.length){
+    grid.innerHTML='<div class="empty"><div class="icon">📭</div><p>此分類暫無庫存</p></div>';
+    return;
+  }
+  
+  grid.innerHTML=products.map(p=>{
+    const low=p.quantity<=p.min_stock;
+    const img=p.image_url?`<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy">`
+      :`<span style="font-size:40px">📦</span>`;
+    return `<div class="card">
+      <div class="card-img">${img}</div>
+      <div class="card-body">
+        <div class="name">${esc(p.name)}</div>
+        <div class="cat">${esc(p.category_name||'')}</div>
+        <div class="stock ${low?'low':''}">${p.quantity}</div>
+        <div class="stock-label">件庫存 ${low?'⚠️ 低於安全存量':''}</div>
+        ${p.location?`<div class="meta">📍 ${esc(p.location)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

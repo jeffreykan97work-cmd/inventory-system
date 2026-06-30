@@ -1,9 +1,20 @@
 services:
   - type: web
-    name: inventory-system
+    name: dma-inventory
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    buildCommand: |
+      pip install -r requirements.txt
+      mkdir -p fonts
+      curl -L -o fonts/NotoSansCJKtc-Regular.otf "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf"
+      curl -L -o fonts/NotoSansCJKtc-Bold.otf "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Bold.otf"
+      ls -la fonts/
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DB_PATH
+        value: /data/inventory.db
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
