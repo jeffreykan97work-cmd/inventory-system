@@ -1,4 +1,5 @@
 fastapi
 uvicorn
-fpdf2
-openpyxl
+python-multipart
+aiofiles
+reportlab
